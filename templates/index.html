@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>🍎Apples And Oranges🍊</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<!-- Responsividade -->
+		<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+		<!-- CSS externo -->
+	</head>
+	<body>
+		<!-- Tela inicial dividida: metade maçã, metade laranja -->
+		<div class="initial-view" id="initialView">
+			<div class="half left">
+				<div class="text-apple">Apples</div>
+			</div>
+			<div class="half right">
+				<div class="text-orange">Oranges</div>
+			</div>
+		</div>
+
+		<!-- Carrossel de frutas -->
+		<div class="carousel">
+			<div class="list">
+				<!-- Item Apple -->
+				<div class="item" style="--background: #ea3d41">
+					<div class="content">Apple</div>
+					<img src="{{ url_for('static', filename='img/fruit_apple.png') }}" class="fruit" />
+				</div>
+				<!-- Item Orange -->
+				<div class="item" style="--background: #e7a043">
+					<div class="content">Orange</div>
+					<img src="{{ url_for('static', filename='img/fruit_orange.png') }}" class="fruit" />
+				</div>
+			</div>
+		</div>
+
+		<!-- Formulário para enviar peso e tamanho -->
+		<form id="form">
+			<label for="model">Modelo:</label>
+			<select id="model" required>
+				<option value="logistic">Regressão Logística</option>
+				<option value="mlp">MLP Classifier</option>
+			</select>
+			<div class="col">
+				<input class="effect" type="text" placeholder="Peso:" id="weight" step="any" required />
+				<span class="focus-bg"></span>
+			</div>
+			<div class="col">
+				<input class="effect" type="text" placeholder="Tamanho:" id="size" step="any" required />
+				<span class="focus-bg"></span>
+			</div>
+			<button class="btn btn-style" type="submit">Enviar</button>
+			<!-- Botão de envio -->
+		</form>
+
+		<script>
+			// Captura o envio do formulário
+			document.getElementById("form").addEventListener("submit", async (e) => {
+				e.preventDefault(); // Evita recarregar a página
+
+				// Envia os dados para a rota '/predict' usando POST
+				const res = await fetch("/predict", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						weight: parseFloat(document.getElementById("weight").value),
+						size: parseFloat(document.getElementById("size").value),
+						model_type: document.getElementById("model").value,
+					}),
+				});
+
+				let data = await res.json(); // Recebe a resposta JSON
+				const result = data.result; // Resultado da predição ('apple' ou 'orange')
+
+				// Mostra o carrossel e esconde a tela inicial
+				document.querySelector(".carousel").style.display = "block";
+				document.getElementById("initialView").style.display = "none";
+
+				// Atualiza a exibição do carrossel de acordo com o resultado
+				const items = document.querySelectorAll(".carousel .list .item");
+				items.forEach((item) => {
+					const content = item.querySelector(".content").textContent.toLowerCase();
+					if (content === result) {
+						item.classList.remove("hidden");
+						item.classList.add("active");
+					} else {
+						item.classList.remove("active");
+						item.classList.add("hidden");
+					}
+				});
+			});
+
+			// Variáveis para controle do carrossel manual
+			let list = document.querySelectorAll(".carousel .list .item");
+			let carousel = document.querySelector(".carousel");
+			let next = document.getElementById("next");
+			let prev = document.getElementById("prev");
+			let mockup = document.querySelector(".mockup");
+			let count = list.length;
+			let active = 0;
+			let leftMockup = 0;
+			let left_each_item = 100 / (list.length - 1);
+
+			// Evento de próximo item
+			next.onclick = () => {
+				active = active >= count - 1 ? 0 : active + 1;
+				leftMockup = leftMockup + left_each_item;
+				carousel.classList.remove("right");
+				changeCarousel();
+			};
+
+			// Evento de item anterior
+			prev.onclick = () => {
+				active = active <= 0 ? count - 1 : active - 1;
+				leftMockup = leftMockup - left_each_item;
+				carousel.classList.add("right");
+				changeCarousel();
+			};
+
+			// Atualiza o carrossel visualmente
+			function changeCarousel() {
+				let hidden_old = document.querySelector(".item.hidden");
+				if (hidden_old) hidden_old.classList.remove("hidden");
+				let active_old = document.querySelector(".item.active");
+				active_old.classList.remove("active");
+				active_old.classList.add("hidden");
+				list[active].classList.add("active");
+				mockup.style.setProperty("--left", leftMockup + "%");
+			}
+		</script>
+	</body>
+</html>
